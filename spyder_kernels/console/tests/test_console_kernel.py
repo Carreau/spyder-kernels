@@ -874,14 +874,16 @@ def test_matplotlib_inline(kernel):
         # Assert backend is inline
         assert 'inline' in value
 
-
-def test_do_complete(kernel):
+@pytest.mark.anyio
+async def test_do_complete(kernel):
     """
     Check do complete works in normal and debugging mode.
     """
-    asyncio.run(kernel.do_execute('abba = 1', True))
-    assert kernel.get_value('abba') == 1
-    match = kernel.do_complete('ab', 2)
+    await kernel.do_execute("abba = 1", True)
+    assert kernel.get_value("abba") == 1
+    match = kernel.do_complete("ab", 2)
+    if inspect.isawaitable(match):
+        match = await match
     assert 'abba' in match['matches']
 
     # test pdb
@@ -890,6 +892,8 @@ def test_do_complete(kernel):
     pdb_obj.completenames = lambda *ignore: ['baba']
     kernel.shell._namespace_stack = [pdb_obj]
     match = kernel.do_complete('ba', 2)
+    if inspect.isawaitable(match):
+        match = await match
     assert 'baba' in match['matches']
     pdb_obj.curframe = None
 
